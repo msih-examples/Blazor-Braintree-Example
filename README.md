@@ -1,4 +1,4 @@
-# Blazor-Braintree-Example
+# Blazor Braintree Example
 Example using Braintree's global payments platform with ASP.NET Core Blazor
 
 Sandbox site: https://blazorbraintreesandbox.azurewebsites.net/
