@@ -1,0 +1,136 @@
+﻿@page "/"
+@using Braintree
+@using System.Text.Json
+@using Microsoft.Extensions.Configuration
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject ILogger<Counter> logger
+
+@inject IConfiguration AppConfiguration
+
+<PageTitle>Blazor Braintree</PageTitle>
+
+<h1>Blazor Braintree Proof of Concept</h1>
+
+<div class="wrapper">
+    <div class="checkout container">
+        <section>
+            <label for="amount">
+                <span class="input-label">Amount</span>
+                <div class="input-wrapper amount-wrapper">
+                    <input id="Amount" name="Amount" type="tel" min="10" @bind="@Amount" disabled />
+                </div>
+            </label>
+
+            <div class="bt-drop-in-wrapper">
+                <div id="bt-dropin"></div>
+            </div>
+        </section>
+
+        <input id="nonce" name="payment_method_nonce" type="hidden" />
+        <button id="submit-button">Process Payment on Server</button>
+
+        <br>
+        PaymentTransactionId: @PaymentTransactionId
+        <br>
+    </div>
+</div>
+
+
+@code {
+    private IJSObjectReference module;
+    public string Amount = "13.45";
+    public string PaymentTransactionId { get; set; }
+
+    public string Environment { get; set; }
+    public string MerchantId { get; set; }
+    public string PublicKey { get; set; }
+    public string PrivateKey { get; set; }
+    public BraintreeGateway gateway = new BraintreeGateway();
+
+    public void CreateBraintreeGateway()
+    {
+        Environment = AppConfiguration["Braintree:Production:BraintreeEnvironment"];
+        MerchantId = AppConfiguration["Braintree:Production:BraintreeMerchantId"];
+        PublicKey = AppConfiguration["Braintree:Production:BraintreePublicKey"];
+        PrivateKey = AppConfiguration["Braintree:Production:BraintreePrivateKey"];
+
+#if (DEBUG)
+    Environment = AppConfiguration["Braintree:Sandbox:BraintreeEnvironment"];
+    MerchantId = AppConfiguration["Braintree:Sandbox:BraintreeMerchantId"];
+    PublicKey = AppConfiguration["Braintree:Sandbox:BraintreePublicKey"];
+    PrivateKey = AppConfiguration["Braintree:Sandbox:BraintreePrivateKey"];
+#endif
+
+        gateway = new BraintreeGateway (Environment, MerchantId, PublicKey, PrivateKey);
+  
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+
+            module = await JS.InvokeAsync<IJSObjectReference>("import",
+                "./braintree.js");
+            CreateBraintreeGateway();
+            var ClientToken = gateway.ClientToken.Generate();
+            var dotNetReference = DotNetObjectReference.Create(this);
+            await module.InvokeVoidAsync("brainstreeDonate", ClientToken, dotNetReference, Amount);
+        }
+    }
+
+    [JSInvokable("ProcessPayment")]
+    public void ProcessPayment(string Nonce)
+    {
+        logger.LogWarning(Nonce);
+        logger.LogWarning(Amount);
+        decimal newAmount = Convert.ToDecimal(Amount);
+        var request = new TransactionRequest
+            {
+                Amount = newAmount,
+                PaymentMethodNonce = Nonce,
+                Options = new TransactionOptionsRequest
+                {
+                    SubmitForSettlement = true
+                }
+            };
+
+        Result<Transaction> result = gateway.Transaction.Sale(request);
+        if (result.IsSuccess())
+        {
+            Transaction transaction = result.Target;
+            logger.LogWarning("transaction success");
+            string jsonString = JsonSerializer.Serialize(transaction);
+            PaymentTransactionId = jsonString; //transaction.Id;
+            StateHasChanged();
+
+            @*redirect*@
+        }
+        else if (result.Transaction != null)
+        {
+            @*redirect*@
+            logger.LogWarning("transaction null");
+        }
+        else
+        {
+            string errorMessages = "";
+            foreach (ValidationError error in result.Errors.DeepAll())
+            {
+                errorMessages += "Error: " + (int)error.Code + " - " + error.Message + "\n";
+            }
+            logger.LogWarning("transaction error");
+            logger.LogWarning(errorMessages);
+        }
+    }
+
+
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (module is not null)
+        {
+            await module.DisposeAsync();
+        }
+    }
+    }

@@ -1,0 +1,13 @@
+﻿@page "/"
+@namespace BlazorBraintree.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = "_Layout";
+}
+
+<component type="typeof(App)" render-mode="ServerPrerendered" />
+
+<head>
+  <meta charset="utf-8">
+  <script src="https://js.braintreegateway.com/web/dropin/1.32.1/js/dropin.min.js"></script>
+</head>
