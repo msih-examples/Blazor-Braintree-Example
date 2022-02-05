@@ -18,7 +18,7 @@
             <label for="amount">
                 <span class="input-label">Amount</span>
                 <div class="input-wrapper amount-wrapper">
-                    <input id="Amount" name="Amount" type="tel" min="10" @bind="@Amount" disabled />
+                    <input id="Amount" name="Amount" type="number" inputmode="decimal" @bind="@Amount" />
                 </div>
             </label>
 
@@ -28,7 +28,7 @@
         </section>
 
         <input id="nonce" name="payment_method_nonce" type="hidden" />
-        <button id="submit-button">Process Payment on Server</button>
+        <button id="submit-button" disabled>Process Payment on Server</button>
 
         <br>
         PaymentTransactionId: @PaymentTransactionId
@@ -62,8 +62,8 @@
     PrivateKey = AppConfiguration["Braintree:Sandbox:BraintreePrivateKey"];
 #endif
 
-        gateway = new BraintreeGateway (Environment, MerchantId, PublicKey, PrivateKey);
-  
+        gateway = new BraintreeGateway(Environment, MerchantId, PublicKey, PrivateKey);
+
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -80,8 +80,16 @@
         }
     }
 
-    [JSInvokable("ProcessPayment")]
-    public void ProcessPayment(string Nonce)
+
+    [JSInvokable]
+    public void ClearTransationResults()
+    {
+        PaymentTransactionId = "";
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void ProcessPayment(string Nonce, string Amount)
     {
         logger.LogWarning(Nonce);
         logger.LogWarning(Amount);
@@ -102,7 +110,7 @@
             Transaction transaction = result.Target;
             logger.LogWarning("transaction success");
             string jsonString = JsonSerializer.Serialize(transaction);
-            PaymentTransactionId = jsonString; //transaction.Id;
+            PaymentTransactionId = jsonString; 
             StateHasChanged();
 
             @*redirect*@
@@ -118,7 +126,10 @@
             foreach (ValidationError error in result.Errors.DeepAll())
             {
                 errorMessages += "Error: " + (int)error.Code + " - " + error.Message + "\n";
+
             }
+            PaymentTransactionId = errorMessages;
+            StateHasChanged();
             logger.LogWarning("transaction error");
             logger.LogWarning(errorMessages);
         }
@@ -133,4 +144,4 @@
             await module.DisposeAsync();
         }
     }
-    }
+}
