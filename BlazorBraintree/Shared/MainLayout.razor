@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@inject IWebHostEnvironment env
 
 <PageTitle>BlazorBraintree</PageTitle>
 
@@ -15,5 +16,20 @@
         <article class="content px-4">
             @Body
         </article>
+        <div class="text-center">
+            <p class="navbar-text">
+                 Env:@envName | <BuildVersion />
+            </p>
+        </div>
     </main>
 </div>
+
+@code{
+
+
+        public string envName;
+
+        protected override async Task OnInitializedAsync() {
+            envName = env.EnvironmentName;
+        }
+}

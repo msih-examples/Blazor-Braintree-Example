@@ -81,7 +81,13 @@
             dotNetObject.invokeMethodAsync('ClearTransationResults');
             instance.clearSelectedPaymentMethod(); // clear payment selection
             instance.updateConfiguration('paypal', 'amount', input.value); // update amount for paypal
-            instance.updateConfiguration('applePay', 'amount', input.value); // update amount for paypal
+            //instance.updateConfiguration('applePay', 'amount', input.value); // update amount for paypal
+            instance.updateConfiguration('applePay', 'paymentRequest', {
+                total: {
+                    label: 'My Store',
+                    amount: input.value
+                }
+            });
         });
 
         instance.on('paymentMethodRequestable', function (event) {

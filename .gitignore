@@ -364,4 +364,4 @@ FodyWeavers.xsd
 
 # history extenstion
 .history/
-appsettings.json
+BlazorBraintree/appsettings.json

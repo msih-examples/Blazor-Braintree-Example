@@ -4,10 +4,18 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <FileVersion>2022.02.05.1820.main.42db20b</FileVersion>
+    <Version>2022.02.05.1820</Version>
+    <Company>Make Sure It Happens LLC</Company>
+    <Authors>Barry Schneider</Authors>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Braintree" Version="5.10.0" />
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="powershell.exe -ExecutionPolicy Unrestricted -NoProfile -NonInteractive -File $(ProjectDir)\post-build.ps1 -ProjectDir $(ProjectDir) -ProjectPath $(ProjectPath)" />
+  </Target>
 
 </Project>
